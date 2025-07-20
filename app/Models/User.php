@@ -21,8 +21,13 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'phone',
+        'proof_bpjs',
+        'proof_kis',
+        'proof_citizen_id',
+        'is_active',
+        'verify_code',
     ];
-
     /**
      * The attributes that should be hidden for serialization.
      *
@@ -32,6 +37,7 @@ class User extends Authenticatable
         'password',
         'remember_token',
     ];
+
 
     /**
      * Get the attributes that should be cast.
