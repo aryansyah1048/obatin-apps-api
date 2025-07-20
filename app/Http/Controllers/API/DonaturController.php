@@ -7,6 +7,9 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\OtpMail;
+
 
 class DonaturController extends Controller
 {
@@ -38,6 +41,7 @@ class DonaturController extends Controller
             $ktpPath = 'ktp/' . $fileName;
         }
 
+        $otp = rand(123456,999999);
 
         $donatur = User::create([
             'name' => $request->nama,
@@ -45,12 +49,16 @@ class DonaturController extends Controller
             'email' => $request->email,
             'password' => bcrypt('default123'), // password default
             'proof_citizen_id' => $ktpPath,
+            'verify_code' => $otp,
             'is_active' => true,
         ]);
 
+        // Kirim email OTP
+        Mail::to($donatur->email)->send(new OtpMail($otp));
+
         return response()->json([
             'success' => true,
-            'message' => 'Donatur berhasil disimpan',
+            'message' => 'Donatur berhasil disimpan, OTP terkirim ke email.',
             'data' => $donatur,
         ], 201);
     }
