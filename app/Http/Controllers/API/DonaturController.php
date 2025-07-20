@@ -9,7 +9,8 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\OtpMail;
-
+use App\Mail\WelcomeMail;
+use Illuminate\Support\Str;
 
 class DonaturController extends Controller
 {
@@ -41,7 +42,7 @@ class DonaturController extends Controller
             $ktpPath = 'ktp/' . $fileName;
         }
 
-        $otp = rand(123456,999999);
+        $otp = rand(123456, 999999);
 
         $donatur = User::create([
             'name' => $request->nama,
@@ -61,5 +62,42 @@ class DonaturController extends Controller
             'message' => 'Donatur berhasil disimpan, OTP terkirim ke email.',
             'data' => $donatur,
         ], 201);
+    }
+
+    public function verifyOtp(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'otp' => 'required|numeric|digits:6',
+        ]);
+
+        $user = User::where('email', $request->email)
+            ->where('verify_code', $request->otp)
+            ->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kode OTP salah atau sudah tidak berlaku.'
+            ], 400);
+        }
+
+        // Generate password baru
+        $newPassword = Str::random(8); // misalnya 8 karakter
+
+        // Update user
+        $user->password = bcrypt($newPassword);
+        $user->verify_code = null;
+        $user->email_verified_at = now();
+        $user->save();
+
+        // Kirim email username dan password
+        Mail::to($user->email)->send(new WelcomeMail($user->email, $newPassword));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Verifikasi OTP berhasil. Password baru dikirim ke email Anda.',
+            'data' => $user,
+        ], 200);
     }
 }
